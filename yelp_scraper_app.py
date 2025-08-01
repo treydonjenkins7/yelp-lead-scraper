@@ -20,58 +20,49 @@ cities = [
 
 # ---------- Scraper Function ----------
 
-def scrape_yelp(industry, city, max_pages=3):
+def scrape_yellowpages(industry, city, max_pages=3):
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
 
     leads = []
-    base_url = "https://www.yelp.com/search"
-    city_encoded = city.replace(", ", "%2C+").replace(" ", "+")
 
-    for page in range(0, max_pages * 10, 10):
-        url = f"{base_url}?find_desc={industry.replace(' ', '+')}&find_loc={city_encoded}&start={page}"
+    for page in range(1, max_pages + 1):
+        url = f"https://www.yellowpages.com/search?search_terms={industry.replace(' ', '+')}&geo_location_terms={city.replace(' ', '+')}&page={page}"
         res = requests.get(url, headers=headers)
         soup = BeautifulSoup(res.text, "html.parser")
 
-        businesses = soup.find_all("div", {"class": "businessName__09f24__EcyvB"})
+        listings = soup.select("div.result")
 
-        for biz in businesses:
+        for result in listings:
             try:
-                name_tag = biz.find("a")
+                name_tag = result.select_one("a.business-name span")
+                phone_tag = result.select_one("div.phones")
+
                 name = name_tag.text.strip() if name_tag else None
-                link = "https://www.yelp.com" + name_tag.get("href") if name_tag else None
+                phone = phone_tag.text.strip() if phone_tag else None
 
-                # Visit the business page to grab phone number
-                if link:
-                    biz_res = requests.get(link, headers=headers)
-                    biz_soup = BeautifulSoup(biz_res.text, "html.parser")
-
-                    phone_tag = biz_soup.find("p", string=lambda x: x and any(c.isdigit() for c in x))
-                    phone = phone_tag.text.strip() if phone_tag else None
-
-                    if name and phone:
-                        leads.append({
-                            "Name": name,
-                            "Phone": phone,
-                            "City": city
-                        })
-
-            except Exception:
+                if name and phone:
+                    leads.append({
+                        "Name": name,
+                        "Phone": phone,
+                        "City": city
+                    })
+            except:
                 continue
 
     return pd.DataFrame(leads)
 
 # ---------- Streamlit UI ----------
 
-st.title("📞 Local Lead Scraper (Yelp Edition)")
+st.title("📞 Local Lead Scraper (YellowPages Edition)")
 
 industry = st.selectbox("Select Industry", industries)
 city = st.selectbox("Select City", cities)
 
 if st.button("Start Scraping"):
-    with st.spinner("Scraping Yelp... please wait (10–30 sec)"):
-        df = scrape_yelp(industry, city)
+    with st.spinner("Scraping YellowPages... please wait"):
+        df = scrape_yellowpages(industry, city)
         st.success(f"✅ Found {len(df)} leads with phone numbers")
 
         if len(df) > 0:
