@@ -1,5 +1,3 @@
-# File: yelp_scraper_app.py
-
 import streamlit as st
 import pandas as pd
 import requests
@@ -13,9 +11,11 @@ industries = [
 ]
 
 cities = [
-    "Miami, FL", "Atlanta, GA", "Houston, TX", "Phoenix, AZ",
-    "Las Vegas, NV", "Orlando, FL", "Dallas, TX", "Tampa, FL",
-    "San Diego, CA", "Nashville, TN"
+    "Boston, MA", "New York, NY", "Los Angeles, CA", "Chicago, IL",
+    "Houston, TX", "Phoenix, AZ", "Philadelphia, PA", "San Antonio, TX",
+    "San Diego, CA", "Dallas, TX", "San Jose, CA", "Austin, TX",
+    "Jacksonville, FL", "Fort Worth, TX", "Columbus, OH", "Charlotte, NC",
+    "San Francisco, CA", "Indianapolis, IN", "Seattle, WA", "Denver, CO", "Miami, FL"
 ]
 
 # ---------- Scraper Function ----------
@@ -40,13 +40,11 @@ def scrape_yelp(industry, city, max_pages=3):
             try:
                 name_tag = listing.find("a", {"class": "css-19v1rkv"})
                 phone_tag = listing.find("p", {"class": "css-8jxw1i"})
-                website_tag = listing.find("a", string="Business website")
 
                 name = name_tag.text.strip() if name_tag else None
                 phone = phone_tag.text.strip() if phone_tag else None
-                website = website_tag.get("href") if website_tag else None
 
-                if name and phone and website is None:
+                if name and phone:
                     leads.append({
                         "Name": name,
                         "Phone": phone,
@@ -68,7 +66,7 @@ city = st.selectbox("Select City", cities)
 if st.button("Start Scraping"):
     with st.spinner("Scraping Yelp..."):
         df = scrape_yelp(industry, city)
-        st.success(f"Found {len(df)} leads without websites!")
+        st.success(f"Found {len(df)} leads with phone numbers!")
 
         if len(df) > 0:
             st.dataframe(df)
